@@ -6,11 +6,13 @@ const connectDB = require('./config/database');
 const app = express();
 const authRouter = require('./routes/auth');
 const companyRouter = require('./routes/companies');
+const warehouseRouter = require('./routes/warehouse');
 app.use(express.json());
 
 
 app.use("/api/auth", authRouter);
 app.use("/api/companies", companyRouter);
+app.use("/api/warehouse", warehouseRouter);
 
 const startServer = async () => {
     try {

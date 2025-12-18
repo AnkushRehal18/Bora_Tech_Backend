@@ -6,19 +6,20 @@ exports.importCompaniesFromCSV = (filePath) => {
     return new Promise((resolve, reject) => {
         const companies = [];
 
+        // AUTO-DETECT CSV SEPARATOR (comma or tab)
+        const firstLine = fs.readFileSync(filePath, "utf8").split("\n")[0];
+        const separator = firstLine.includes("\t") ? "\t" : ",";
+
         fs.createReadStream(filePath)
             .pipe(csv({
-                separator: ',',
+                separator,
                 mapHeaders: ({ header }) => header.trim(),
                 mapValues: ({ value }) => value ? value.trim() : value
             }))
             .on("data", (row) => {
-                // Normalize keys to lowercase for case-insensitive matching if needed, 
-                // but here we stick to the provided variations for now.
-                // We can handle empty rows by checking if required fields exist.
                 const name = row.name || row.Name;
                 const gst = row.GSTNumber || row.GST;
-                
+
                 if (name && gst) {
                     companies.push({
                         name: name,
@@ -35,12 +36,12 @@ exports.importCompaniesFromCSV = (filePath) => {
                 try {
                     if (companies.length === 0) {
                         deleteFile(filePath);
-                        return resolve({ 
+                        return resolve({
                             status: true,
                             message: "No valid companies found in CSV.",
-                            insertedCount: 0, 
-                            errorCount: 0, 
-                            errors: [] 
+                            insertedCount: 0,
+                            errorCount: 0,
+                            errors: []
                         });
                     }
 
@@ -49,36 +50,36 @@ exports.importCompaniesFromCSV = (filePath) => {
                     });
 
                     deleteFile(filePath);
-                    resolve({ 
+                    resolve({
                         status: true,
                         message: "All companies imported successfully.",
-                        insertedCount: inserted.length, 
-                        errorCount: 0, 
-                        errors: [] 
+                        insertedCount: inserted.length,
+                        errorCount: 0,
+                        errors: []
                     });
                 } catch (error) {
                     deleteFile(filePath);
-                    
+
                     if (error.code === 11000 || error.writeErrors) {
-                        // Partial success or duplicate key errors
-                        const insertedCount = error.insertedDocs ? error.insertedDocs.length : 0;
+                        const insertedCount = error.insertedDocs
+                            ? error.insertedDocs.length
+                            : 0;
+
                         const writeErrors = error.writeErrors || [];
                         const errorCount = writeErrors.length;
-                        
-                        // Map errors to a more readable format
+
                         const errors = writeErrors.map(e => ({
                             index: e.index,
                             message: e.errmsg,
-                            // Extract GSTNumber if possible from the error message or operation
                             identifier: e.op ? e.op.GSTNumber : 'Unknown'
                         }));
 
-                        resolve({ 
-                            status: true, // We resolve as success because some might have been inserted
+                        resolve({
+                            status: true,
                             message: `Imported ${insertedCount} companies. ${errorCount} failed.`,
-                            insertedCount, 
-                            errorCount, 
-                            errors 
+                            insertedCount,
+                            errorCount,
+                            errors
                         });
                     } else {
                         console.error("Import Error:", error);
@@ -101,11 +102,8 @@ const deleteFile = (filePath) => {
 
 const cleanContact = (contact) => {
     if (!contact) return contact;
-    // Remove non-digits
     const digits = contact.toString().replace(/\D/g, '');
-    // If 10 digits, return.
     if (digits.length === 10) return digits;
-    // If > 10 digits and starts with 91, remove 91 (for India)
     if (digits.length > 10 && digits.startsWith('91')) {
         return digits.slice(-10);
     }
