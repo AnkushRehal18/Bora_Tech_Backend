@@ -7,12 +7,16 @@ const app = express();
 const authRouter = require('./routes/auth');
 const companyRouter = require('./routes/companies');
 const warehouseRouter = require('./routes/warehouse');
+const bankRouter = require('./routes/bank');
+const PIRouter = require('./routes/PI');
 app.use(express.json());
 
 
 app.use("/api/auth", authRouter);
 app.use("/api/companies", companyRouter);
 app.use("/api/warehouse", warehouseRouter);
+app.use("/api/banks", bankRouter);
+app.use("/api/PI", PIRouter);
 
 const startServer = async () => {
     try {
