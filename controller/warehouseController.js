@@ -149,3 +149,73 @@ exports.editWarehouse = async (req, res) => {
         });
     }
 };
+
+exports.deleteWarehouse = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Validate ID
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: "Warehouse ID is required",
+            });
+        }
+
+        // Check if warehouse exists
+        const warehouse = await Warehouse.findById(id);
+        if (!warehouse) {
+            return res.status(404).json({
+                success: false,
+                message: "Warehouse not found",
+            });
+        }
+
+        // Delete warehouse
+        await Warehouse.findByIdAndDelete(id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Warehouse deleted successfully",
+        });
+
+    } catch (error) {
+        logger.error("Delete Warehouse Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+exports.bulkDeleteWarehousesFast = async (req, res) => {
+    try {
+        const { warehouseIds } = req.body;
+
+        //
+        if (!Array.isArray(warehouseIds) || warehouseIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "warehouseIds array required",
+            });
+        }
+
+        // FASTEST delete
+        const result = await Warehouse.collection.deleteMany({
+            _id: { $in: warehouseIds }
+        });
+
+        return res.status(200).json({
+            success: true,
+            deletedCount: result.deletedCount,
+            message: "Warehouses deleted successfully",
+        });
+
+    } catch (error) {
+        console.error("Fast Bulk Delete Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
